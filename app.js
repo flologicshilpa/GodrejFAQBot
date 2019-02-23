@@ -224,7 +224,7 @@ bot.dialog('FAQ', [
                     });
 
                     var promptOptions = { listStyle: builder.ListStyle.button };
-                    builder.Prompts.choice(session, "I didn't find an exact match; although, here are some similar topics that might interest you.", questionOptionsList, promptOptions);
+                    builder.Prompts.choice(session, "I did not find an exact match; although, here are some similar topics that might interest you.", questionOptionsList, promptOptions);
                     session.endDialog();
                 }
             }
