@@ -172,7 +172,7 @@ bot.dialog('FAQ', [
                 {
                     var questionOptionsList = [];
                     qnaMakerResult.answers.forEach(function (qna) {
-                        if (qna.score > 30) {
+                        if (qna.score > 50) {
                             questionOptionsList.push(qna.questions[0]);
                         }
                     });
