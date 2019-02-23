@@ -9,7 +9,6 @@ const Request = require('request');
 var azure = require('botbuilder-azure');
 const CosmosClient = require('@azure/cosmos').CosmosClient;
 const config = require('./config');
-//const url = require('url');
 const endpoint = config.endpoint;
 const masterKey = config.primaryKey;
 const client = new CosmosClient({ endpoint: endpoint, auth: { masterKey: masterKey } });
@@ -80,7 +79,6 @@ bot.dialog('endConversationDialog',[
         UserId=session.conversationData.userID;
         ConversationId=session.conversationData.conversationID;
                  
-      // session.send("botid=%s botName=%s UserName=%s UserId=%s ConversationId=%s Date=%s DateTime=%s",BotID,BotName,UserName,UserId,ConversationId,date,datetime);
         createFamilyItem(BotID,BotName,ConversationId,UserId,UserName,session.message.text,"Conversation End..");
 
         session.endDialog();
@@ -90,7 +88,7 @@ bot.dialog('FAQ', [
     function (session, args, next) {
         var qnaMakerResult
         const question = session.message.text;
-        if(question == 'hi')
+        if(question == 'hi' || question == 'Hi')
         {
             var name=session.message.user.name;
             var id=session.message.user.id;
@@ -103,14 +101,53 @@ bot.dialog('FAQ', [
         session.conversationData.userID=id;
         session.conversationData.conversationID=jsonParse.address.conversation.id;
 
-        session.send("Hello! Welcome to FAQ Bot");
+        session.send("Hello %s! Welcome to FAQ Bot \n\n You can ask me questions on various topics like Vendor Creation, Use of HSN, T-Codes and many more useful topics.",name);
+       // session.send("You can ask me questions on various topics like Vendor Creation, Use of HSN, T-Codes and many more useful topics.");
+        let msg = new builder.Message(session)
+                    .addAttachment({
+                        contentType: "application/vnd.microsoft.card.adaptive",
+                        content: {
+                            type: "AdaptiveCard",
+                            body: [
+                                {
+                                    "type": "TextBlock",
+                                    "text": "You can ask me questions like :",
+                                    "size": "large",
+                                    "weight": "bolder",
+                                    "color": "dark",
+                                    "wrap": true
+                                },
+                                {
+                                    "type": "TextBlock",
+                                    "text": "_**“What is Vendor Master?”**_"+
+                                            "\n _**“How to use HSN?”**_"+
+                                            "\n _**“What is t-code for material?”**_"+
+                                            "\n _**“How to create Vendor in SAP?”**_"+
+                                            "\n _**“List of t-code?”**_"+
+                                            "\n _**“What is t-code for service?”**_",
+                                    "size": "large",
+                                    "weight": "regular",
+                                    "color": "dark",
+                                    "wrap": true
+                                },
+                                {
+                                    "type": "TextBlock",
+                                    "text": "How can I can help you today?",
+                                    "size": "large",
+                                    "weight": "regular",
+                                    "color": "dark",
+                                    "wrap": true
+                                }
+                            ]
+                        }
+                    });
+                    session.send(msg);
         BotID=session.conversationData.botID;
         BotName=session.conversationData.botName;
         UserName=session.conversationData.userName;
         UserId=session.conversationData.userID;
         ConversationId=session.conversationData.conversationID;
                  
-      // session.send("botid=%s botName=%s UserName=%s UserId=%s ConversationId=%s Date=%s DateTime=%s",BotID,BotName,UserName,UserId,ConversationId,date,datetime);
         createFamilyItem(BotID,BotName,ConversationId,UserId,UserName,session.message.text,"Conversation Start..");
          
     }
@@ -122,8 +159,6 @@ bot.dialog('FAQ', [
             const response = JSON.parse(body);
 
             if (response.answers.length > 0) {
-
-                //////////////////
 
                 session.dialogData.qnaMakerResult = qnaMakerResult = response;
                 var questionOptions = [];
@@ -167,7 +202,18 @@ bot.dialog('FAQ', [
                 UserId=session.conversationData.userID;
                 ConversationId=session.conversationData.conversationID;
                 createFamilyItem(BotID,BotName,ConversationId,UserId,UserName,session.message.text,"Question Answered");                    
-                }
+               
+                var questionOptionsList = [];
+                qnaMakerResult.answers.forEach(function (qna) {
+                    if (qna.score > 50) {
+                        questionOptionsList.push(qna.questions[0]);
+                    }
+                });
+
+                var promptOptions = { listStyle: builder.ListStyle.button };
+                builder.Prompts.choice(session, "Also, here are some more topics that might interest you.", questionOptionsList, promptOptions);
+                session.endDialog();
+            }
                 else
                 {
                     var questionOptionsList = [];
@@ -178,56 +224,43 @@ bot.dialog('FAQ', [
                     });
 
                     var promptOptions = { listStyle: builder.ListStyle.button };
-                    builder.Prompts.choice(session, "Multiple topics are found in response to your query. Select the relevant topic from the following:", questionOptionsList, promptOptions);
+                    builder.Prompts.choice(session, "I didn't find an exact match; although, here are some similar topics that might interest you.", questionOptionsList, promptOptions);
                     session.endDialog();
                 }
-
-                /*if (questionOptions.length > 1) {
-                    var promptOptions = { listStyle: builder.ListStyle.button };
-                    builder.Prompts.choice(session, "Multiple topics are found in response to your query. Select the relevant topic from the following:", questionOptions, promptOptions);
-                }
-                else {
-                    let msg = new builder.Message(session)
-                        .addAttachment({
-                            contentType: "application/vnd.microsoft.card.adaptive",
-                            content: {
-                                type: "AdaptiveCard",
-                                body: [
-                                    {
-                                        "type": "TextBlock",
-                                        "text": question,
-                                        "size": "large",
-                                        "weight": "bolder",
-                                        "color": "dark",
-                                        "wrap": true
-                                    },
-                                    {
-                                        "type": "TextBlock",
-                                        "text": response.answers[0].answer,
-                                        "size": "large",
-                                        "weight": "regular",
-                                        "color": "dark",
-                                        "wrap": true
-                                    }
-                                ]
-                            }
-                        });
-                    session.send(msg);
-
-
-                    BotID=session.conversationData.botID;
-                    BotName=session.conversationData.botName;
-                    UserName=session.conversationData.userName;
-                    UserId=session.conversationData.userID;
-                    ConversationId=session.conversationData.conversationID;
-                             
-                  // session.send("botid=%s botName=%s UserName=%s UserId=%s ConversationId=%s Date=%s DateTime=%s",BotID,BotName,UserName,UserId,ConversationId,date,datetime);
-                    createFamilyItem(BotID,BotName,ConversationId,UserId,UserName,session.message.text,"Question Answered");
-                }*/
-                ///////////
             }
             else {
-                session.send('No data found for given query.Narrow your search.');
+                session.send('No data found for given query.');
+                let msg = new builder.Message(session)
+                    .addAttachment({
+                        contentType: "application/vnd.microsoft.card.adaptive",
+                        content: {
+                            type: "AdaptiveCard",
+                            body: [
+                                {
+                                    "type": "TextBlock",
+                                    "text": " May be try some question like those given below.",
+                                    "size": "large",
+                                    "weight": "bolder",
+                                    "color": "dark",
+                                    "wrap": true
+                                },
+                                {
+                                    "type": "TextBlock",
+                                    "text": "_**“What is Vendor Master?”**_"+
+                                            "\n _**“How to use HSN?”**_"+
+                                            "\n _**“What is t-code for material?”**_"+
+                                            "\n _**“How to create Vendor in SAP?”**_"+
+                                            "\n _**“List of t-code?”**_"+
+                                            "\n _**“What is t-code for service?”**_",
+                                    "size": "large",
+                                    "weight": "regular",
+                                    "color": "dark",
+                                    "wrap": true
+                                }
+                            ]
+                        }
+                    });
+                    session.send(msg);
                 session.endDialog();
             }
 
